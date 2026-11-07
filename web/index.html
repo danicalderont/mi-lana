@@ -278,10 +278,13 @@ button{cursor:pointer;border:0;background:none}
 .rl:last-child{border-bottom:0}
 .rl .n{min-width:0}
 .rl .n small{display:block;color:var(--muted);font-size:12px}
-.rl .m{font-variant-numeric:tabular-nums;font-weight:700;text-align:right;white-space:nowrap}
+.rl .m{font-variant-numeric:tabular-nums;font-weight:600;text-align:right;white-space:nowrap}
 .rl.tot{border-top:2px solid var(--ink);border-bottom:0;margin-top:4px;padding-top:10px;font-size:15px}
-.rl.tot .n{font-weight:800}
-.rl.sub .n{font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;font-size:12px}
+.rl.tot .n,.rl.tot .m{font-weight:800}
+.res .rl .m{font-weight:800}
+.rl.sub{border-bottom-color:transparent;padding-top:14px}
+.rl.sub .n{font-weight:800;color:var(--ink);font-size:14px}
+.rl.sub .m{font-weight:800}
 .rep-sec h3{font-family:var(--f-display);font-weight:800;font-size:17px;margin:0 0 4px;display:flex;align-items:center;gap:8px}
 .rep-sec h3 .i{width:18px;height:18px}
 .st{font-size:11.5px;font-weight:700;border-radius:999px;padding:2px 8px;margin-left:6px;white-space:nowrap}
@@ -432,7 +435,7 @@ function enviar(payload){
   api(payload).then(()=>{S.stale=false}).catch(fail).finally(()=>{pendientes--;pintarSync()});
 }
 function pintarSync(){const n=document.getElementById('sync');if(n)n.innerHTML=syncTxt()}
-async function put(col,id,obj){S.data[col][id]=obj;saveLocal();render();enviar({action:'put',col,id,obj})}
+async function put(col,id,obj){S.pdf=null;S.data[col][id]=obj;saveLocal();render();enviar({action:'put',col,id,obj})}
 async function del(col,id){delete S.data[col][id];saveLocal();render();enviar({action:'del',col,id})}
 async function savePerfil(p){S.data.perfil=Object.assign({},S.data.perfil,p);saveLocal();render();enviar({action:'perfil',obj:p})}
 function fail(e){S.stale=true;const m=e&&e.message;toast(m==='clave'?'La clave no coincide con la de tu hoja.':m==='pin'?'Tu PIN ya no coincide. Vuelve a entrar a tu perfil.':'No se pudo guardar en tu hoja. Revisa tu internet e inténtalo otra vez.')}
@@ -745,47 +748,80 @@ const fechaC=f=>{const dt=new Date(f+'T12:00:00');return dt.getDate()+' '+MESES[
 const STX={ok:'Pagado',pend:'Pendiente',au:'Automático'};
 function vReporte(){
   const r=datosReporte(S.ym),mes=mesL(S.ym),Mes=mes[0].toUpperCase()+mes.slice(1);
-  const fila=(x,stTxt)=>`<div class="rl"><div class="n">${esc(x.n)}${x.st&&stTxt?`<span class="st ${x.st}">${stTxt[x.st]}</span>`:''}${x.sub?`<small>${esc(x.sub)}</small>`:''}</div><div class="m">${$m2(x.m)}</div></div>`;
+  const fila=x=>`<div class="rl"><div class="n">${esc(x.n)}${x.sub?`<small>${esc(x.sub)}</small>`:''}</div><div class="m">${$m2(x.m)}</div></div>`;
   const tot=(n,v)=>`<div class="rl tot"><div class="n">${n}</div><div class="m">${$m2(v)}</div></div>`;
-  const sec=(icono,col,titulo,cuerpo)=>`<section class="card rep-sec"><h3>${ic(icono,col)}${titulo}</h3>${cuerpo}</section>`;
+  const grupo=(icono,n,t)=>`<div class="rl sub"><div class="n" style="display:flex;align-items:center;gap:6px">${icono}${esc(n)}</div><div class="m">${$m2(t)}</div></div>`;
+  const sec=(icono,col,titulo,cuerpo)=>`<section class="card rep-sec">${'<h3>'+ic(icono,col)+titulo+'</h3>'}${cuerpo}</section>`;
   const vacio=t=>`<p class="muted" style="margin:6px 0">${t}</p>`;
-  const STI={ok:'Recibido',pend:'Por recibir',au:'Automático'};
-  const ingresos=sec('sueldo','#17935A','Ingresos',r.ingresos.length?r.ingresos.map(x=>fila(x,STI)).join('')+tot('Total de ingresos',r.tIng):vacio('Sin ingresos registrados.'));
-  const fijos=sec('calendario','#00A3A3','Gastos fijos',r.fijos.length?r.fijos.map(g=>`<div class="rl sub"><div class="n" style="display:flex;align-items:center;gap:6px">${ic(g.k,g.col)}${g.n}</div><div class="m">${$m2(g.t)}</div></div>${g.xs.map(x=>fila(x,STX)).join('')}`).join('')+tot('Total de gastos fijos',r.tFij):vacio('Sin gastos fijos.'));
-  const deudas=r.deudas.length?sec('tarjeta','#D92D4A','Deudas',r.deudas.map(x=>fila(x,STX)).join('')+tot('Total de deudas',r.tDeu)):'';
-  const vars=sec('recibo','#E4007C','Gastos variables',r.variables.length?r.variables.map(g=>`<div class="rl sub"><div class="n" style="display:flex;align-items:center;gap:6px">${g.info.e}${esc(g.n)}</div><div class="m">${$m2(g.t)}</div></div>${g.xs.map(x=>fila(x)).join('')}`).join('')+tot('Total de gastos variables',r.tVar):vacio('Sin gastos variables este mes.'));
-  const STA={ok:'Apartado',pend:'Por apartar',au:'Automático'};
-  const ahorro=r.ahorro.length?sec('moneda','#9B5DE5','Ahorro',r.ahorro.map(x=>fila(x,STA)).join('')+tot('Total de ahorro',r.tAho)):'';
+  // los pagos de deudas van dentro de gastos fijos, como una categoría más
+  const gruposFijos=[...r.fijos.map(g=>({icono:ic(g.k,g.col),n:g.n,t:g.t,xs:g.xs})),...(r.deudas.length?[{icono:ic('tarjeta','#D92D4A'),n:'Deudas',t:r.tDeu,xs:r.deudas}]:[])];
+  const tFijos=r.tFij+r.tDeu;
+  const ingresos=sec('sueldo','#17935A','Detalle de ingresos',r.ingresos.length?r.ingresos.map(fila).join('')+tot('Total de ingresos',r.tIng):vacio('Sin ingresos registrados.'));
+  const fijos=sec('calendario','#00A3A3','Detalle de gastos fijos',gruposFijos.length?gruposFijos.map(g=>grupo(g.icono,g.n,g.t)+g.xs.map(fila).join('')).join('')+tot('Total de gastos fijos',tFijos):vacio('Sin gastos fijos.'));
+  const vars=sec('recibo','#E4007C','Gastos variables',r.variables.length?r.variables.map(g=>grupo(g.info.e,g.n,g.t)+g.xs.map(fila).join('')).join('')+tot('Total de gastos variables',r.tVar):vacio('Sin gastos variables este mes.'));
+  const ahorro=r.ahorro.length?sec('moneda','#9B5DE5','Ahorro',r.ahorro.map(x=>fila({n:x.n,sub:'Apartado',m:x.m})).join('')+tot('Total de ahorro',r.tAho)):'';
   const neg=r.balance<0;
-  const resumen=`<section class="res"><div class="lbl">Resultado de ${esc(mes)}</div>
+  const resumen=`<section class="res"><div class="lbl">Resultado del mes</div>
     <div class="rl"><div class="n">Ingresos</div><div class="m" style="color:var(--ok)">+${$m2(r.tIng)}</div></div>
-    <div class="rl"><div class="n">Gastos fijos</div><div class="m">−${$m2(r.tFij)}</div></div>
-    ${r.tDeu?`<div class="rl"><div class="n">Deudas</div><div class="m">−${$m2(r.tDeu)}</div></div>`:''}
+    <div class="rl"><div class="n">Gastos fijos</div><div class="m">−${$m2(tFijos)}</div></div>
     <div class="rl"><div class="n">Gastos variables</div><div class="m">−${$m2(r.tVar)}</div></div>
     ${r.tAho?`<div class="rl"><div class="n">Ahorro</div><div class="m">−${$m2(r.tAho)}</div></div>`:''}
-    <div class="rl tot"><div class="n">${neg?'Te falta':'Te queda'}</div><div class="m" style="color:${neg?'var(--bad)':'var(--ok)'};font-size:20px">${neg?'−':''}${$m2(Math.abs(r.balance))}</div></div>
-    ${r.tPend?`<div style="margin-top:14px;padding-top:12px;border-top:1px dashed var(--line)"><div class="lbl">Todavía por pagar este mes</div><div class="big" style="margin:6px 0 4px;color:var(--rosa-ink)">${$m2(r.tPend)}</div>${r.pend.map(x=>`<div class="rl"><div class="n">${esc(x.n)}<span class="st ${x.st}">${STX[x.st]}</span>${x.sub?`<small>${esc(x.sub)}</small>`:''}</div><div class="m">${$m2(x.m)}</div></div>`).join('')}</div>`:`<p style="margin:12px 0 0;font-weight:700;color:var(--ok);display:flex;gap:6px;align-items:center">${ic('check')}No te queda nada por pagar este mes.</p>`}
-    ${r.porRecibir?`<p class="muted" style="margin:10px 0 0;font-size:13px">Incluye ${$m2(r.porRecibir)} de ingresos que todavía no te caen.</p>`:''}</section>`;
+    <div class="rl tot"><div class="n">${neg?'Te faltó':'Te quedó'}</div><div class="m" style="color:${neg?'var(--bad)':'var(--ok)'};font-size:20px">${neg?'−':''}${$m2(Math.abs(r.balance))}</div></div></section>`;
   const gen=new Date();
+  const btnPdf=S.pdf&&S.pdf.ym===S.ym?`<button class="btn pri" data-act="pdfListo">${ic('check')} Guardar o mandar PDF</button>`:`<button class="btn pri" data-act="pdf" ${S.pdfCargando?'disabled':''}>${S.pdfCargando?'Preparando PDF…':'Crear PDF'}</button>`;
   return `<div class="stack">
-    <div class="rep-acts no-print"><button class="btn sec" data-act="volver">‹ Regresar</button><span style="flex:1"></span><button class="btn sec" data-act="compartir">Compartir</button><button class="btn pri" data-act="imprimir">Guardar PDF</button></div>
+    <div class="rep-acts no-print"><button class="btn sec" data-act="volver">‹ Regresar</button><span style="flex:1"></span>${btnPdf}</div>
+    <div id="rep" class="stack">
     <div class="rep-h"><img src="logo.svg" alt=""><div><div class="t">Reporte de ${esc(Mes)}</div><div class="s">${SES?esc(SES.nombre)+' · ':''}Hecho el ${gen.getDate()} de ${MESES[gen.getMonth()]} de ${gen.getFullYear()}</div></div></div>
-    ${resumen}${ingresos}${fijos}${deudas}${vars}${ahorro}
-    <p class="hint" style="margin:0 2px">Los gastos fijos y deudas que aún no se pagan cuentan con su monto del mes. Los ingresos fijos que no han caído cuentan con lo que esperas recibir.</p></div>`;
+    ${resumen}${ingresos}${fijos}${vars}${ahorro}</div></div>`;
 }
-async function compartirReporte(){
-  const r=datosReporte(S.ym),mes=mesL(S.ym),L=[];
-  L.push(`Mi Lana · Reporte de ${mes}`+(SES?` (${SES.nombre})`:''),'');
-  L.push('INGRESOS');r.ingresos.forEach(x=>L.push(`  ${x.n}: ${$m2(x.m)}`));L.push(`  Total: ${$m2(r.tIng)}`,'');
-  L.push('GASTOS FIJOS');r.fijos.forEach(g=>{L.push(`  ${g.n}: ${$m2(g.t)}`);g.xs.forEach(x=>L.push(`    ${x.n} (${STX[x.st]}): ${$m2(x.m)}`))});L.push(`  Total: ${$m2(r.tFij)}`,'');
-  if(r.deudas.length){L.push('DEUDAS');r.deudas.forEach(x=>L.push(`  ${x.n} (${STX[x.st]}): ${$m2(x.m)}`));L.push(`  Total: ${$m2(r.tDeu)}`,'')}
-  L.push('GASTOS VARIABLES');r.variables.forEach(g=>L.push(`  ${g.n}: ${$m2(g.t)}`));L.push(`  Total: ${$m2(r.tVar)}`,'');
-  if(r.ahorro.length){L.push('AHORRO');r.ahorro.forEach(x=>L.push(`  ${x.n}: ${$m2(x.m)}`));L.push(`  Total: ${$m2(r.tAho)}`,'')}
-  L.push(`RESULTADO: ${r.balance<0?'te falta':'te queda'} ${$m2(Math.abs(r.balance))}`);
-  if(r.tPend)L.push(`Todavía por pagar: ${$m2(r.tPend)}`);
-  const text=L.join('\n');
-  try{if(navigator.share){await navigator.share({title:`Reporte de ${mes}`,text});return}}catch(e){if(e&&e.name==='AbortError')return}
-  try{await navigator.clipboard.writeText(text);toast('Reporte copiado. Pégalo donde quieras.')}catch(e){toast('No pude compartirlo desde este teléfono.')}
+
+/* ---------- PDF de verdad: se arma en el teléfono y se comparte como archivo ---------- */
+function cargarScript(src){return new Promise((ok,mal)=>{if(document.querySelector(`script[src="${src}"]`)&&window.__libs&&window.__libs[src])return ok();const sc=document.createElement('script');sc.src=src;sc.onload=()=>{(window.__libs=window.__libs||{})[src]=1;ok()};sc.onerror=mal;document.head.appendChild(sc)})}
+const LIB_H2C='https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js',LIB_PDF='https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js';
+async function crearPdf(){
+  if(S.pdfCargando)return;S.pdfCargando=true;render();
+  const raiz=document.documentElement,temaAntes=raiz.getAttribute('data-theme');
+  try{
+    await Promise.all([cargarScript(LIB_H2C),cargarScript(LIB_PDF)]);
+    if(document.fonts&&document.fonts.ready)await document.fonts.ready;
+    raiz.setAttribute('data-theme','light');await new Promise(r=>requestAnimationFrame(()=>requestAnimationFrame(r)));
+    const rep=document.getElementById('rep');if(!rep)throw new Error('sin reporte');
+    const bloques=[...rep.children];
+    const {jsPDF}=window.jspdf;const pdf=new jsPDF({unit:'mm',format:'a4',compress:true});
+    const W=210,H=297,M=12,ancho=W-2*M,gap=4;let y=M;
+    const fondo=getComputedStyle(document.body).backgroundColor;
+    for(const el of bloques){
+      const cv=await html2canvas(el,{scale:2,backgroundColor:fondo,useCORS:true,logging:false});
+      const altoMm=cv.height*ancho/cv.width;
+      if(altoMm<=H-2*M){
+        if(y+altoMm>H-M){pdf.addPage();y=M}
+        pdf.addImage(cv.toDataURL('image/jpeg',.92),'JPEG',M,y,ancho,altoMm);y+=altoMm+gap;
+      }else{ // sección más alta que una hoja: se reparte en varias
+        const pxPorMm=cv.width/ancho;let desde=0;
+        while(desde<cv.height){
+          if(y>M+20){pdf.addPage();y=M}
+          const altoPx=Math.min(cv.height-desde,Math.floor((H-M-y)*pxPorMm));
+          const c2=document.createElement('canvas');c2.width=cv.width;c2.height=altoPx;c2.getContext('2d').drawImage(cv,0,desde,cv.width,altoPx,0,0,cv.width,altoPx);
+          pdf.addImage(c2.toDataURL('image/jpeg',.92),'JPEG',M,y,ancho,altoPx/pxPorMm);y+=altoPx/pxPorMm+gap;desde+=altoPx;
+          if(desde<cv.height){pdf.addPage();y=M}
+        }
+      }
+    }
+    // fondo de todas las hojas del mismo color que la app
+    const nombre=`Mi Lana - ${mesL(S.ym)}${SES?' - '+SES.nombre:''}.pdf`;
+    S.pdf={ym:S.ym,nombre,blob:pdf.output('blob')};
+    toast('Listo, tu PDF ya está.');
+  }catch(e){toast('No pude crear el PDF. Revisa tu internet e inténtalo otra vez.')}
+  finally{if(temaAntes==null)raiz.removeAttribute('data-theme');else raiz.setAttribute('data-theme',temaAntes);S.pdfCargando=false;render()}
+}
+async function entregarPdf(){
+  const p=S.pdf;if(!p)return;
+  const archivo=new File([p.blob],p.nombre,{type:'application/pdf'});
+  try{
+    if(navigator.canShare&&navigator.canShare({files:[archivo]})){await navigator.share({files:[archivo],title:p.nombre});return}
+  }catch(e){if(e&&e.name==='AbortError')return}
+  const url=URL.createObjectURL(p.blob),a=document.createElement('a');a.href=url;a.download=p.nombre;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),60000);
 }
 
 function vInicio(){
@@ -1117,13 +1153,14 @@ function payDeuda(id){const x=S.data.deudas[id];if(!x)return;const h=Object.assi
 document.addEventListener('click',async e=>{
   const b=e.target.closest('[data-act]');if(!b)return;const a=b.dataset.act,id=b.dataset.id;
   if(a==='tab'){S.view=b.dataset.v;render();window.scrollTo({top:0});return}
+  if(a==='prevM'||a==='nextM')S.pdf=null;
   if(a==='prevM'){S.ym=addM(S.ym,esAnual()?-12:-1);render();return}
   if(a==='nextM'){S.ym=addM(S.ym,esAnual()?12:1);render();return}
   if(a==='scope'){S.scope=b.dataset.v;render();return}
-  if(a==='reporte'){S.view='reporte';render();window.scrollTo({top:0});return}
+  if(a==='reporte'){S.view='reporte';S.pdf=null;render();cargarScript(LIB_H2C).catch(()=>{});cargarScript(LIB_PDF).catch(()=>{});window.scrollTo({top:0});return}
   if(a==='volver'){S.view='inicio';render();window.scrollTo({top:0});return}
-  if(a==='imprimir'){try{window.print()}catch(e){toast('Tu teléfono no dejó guardar el PDF. Usa “Compartir”.')}return}
-  if(a==='compartir'){compartirReporte();return}
+  if(a==='pdf'){crearPdf();return}
+  if(a==='pdfListo'){entregarPdf();return}
   if(a==='filtro'){S.filtro=b.dataset.v;render();return}
   if(a==='startReal'){await salirDemo();S.view='inicio';render();toast('Empieza con lo que te entra cada mes');sheetIngresoFijo();return}
   if(a==='elegirPerfil'){const p=(S.perfiles||[]).find(x=>x.id===id);if(p)sheetPin(p);return}
