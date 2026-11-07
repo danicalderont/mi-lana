@@ -903,13 +903,10 @@ function vInicio(){
       <span style="width:${w(c.compPagado)};background:var(--turq)"></span><span style="width:${w(c.compPend)};background:color-mix(in srgb,var(--turq) 40%,var(--surface-2))"></span><span style="width:${w(c.varTotal)};background:var(--rosa)"></span><span style="width:${w(c.am.total)};background:var(--lila)"></span><span style="width:${w(c.libre)};background:var(--lima)"></span>
     </div>
     <div class="legend"><div><i class="dot" style="background:var(--turq)"></i>Pagado ${$m(c.compPagado)}</div><div><i class="dot" style="background:color-mix(in srgb,var(--turq) 40%,var(--surface-2))"></i>Por pagar ${$m(c.compPend)}</div><div><i class="dot" style="background:var(--rosa)"></i>Gastos libres ${$m(c.varTotal)}</div>${c.am.total>0?`<div><i class="dot" style="background:var(--lila)"></i>Ahorro ${$m(c.am.total)}</div>`:''}<div><i class="dot" style="background:var(--lima)"></i>Libre ${$m(Math.max(0,c.libre))}</div></div></section>`;
-  const futuro=S.ym>curYM();
-  const stats=futuro?`<div class="stats"><div class="stat"><div class="k"><i class="dot" style="background:var(--ok)"></i>Te va a entrar</div><div class="v">${$m(c.base)}</div></div>
-    <div class="stat"><div class="k"><i class="dot" style="background:var(--turq)"></i>Pagos fijos</div><div class="v">${$m(c.comp)}</div></div>
-    <div class="stat"><div class="k"><i class="dot" style="background:var(--lila)"></i>Ahorro</div><div class="v">${$m(Math.max(0,c.am.total))}</div></div></div>`
-  :`<div class="stats"><div class="stat"><div class="k"><i class="dot" style="background:var(--ok)"></i>Entró</div><div class="v">${$m(c.ingresos)}</div></div>
-    <div class="stat"><div class="k"><i class="dot" style="background:var(--rosa)"></i>Salió</div><div class="v">${$m(c.gastos)}</div></div>
-    <div class="stat"><div class="k"><i class="dot" style="background:var(--warn)"></i>Por pagar</div><div class="v">${$m(c.compPend)}</div></div></div>`;
+  // todo lo del mes, ya haya caído o pagado o no
+  const stats=`<div class="stats"><div class="stat"><div class="k"><i class="dot" style="background:var(--ok)"></i>Ingresos</div><div class="v">${$m(c.base)}</div></div>
+    <div class="stat"><div class="k"><i class="dot" style="background:var(--rosa)"></i>Gastos</div><div class="v">${$m(c.comp+c.varTotal)}</div></div>
+    <div class="stat"><div class="k"><i class="dot" style="background:var(--lila)"></i>Ahorro</div><div class="v">${$m(Math.max(0,c.am.total))}</div></div></div>`;
   // próximos pagos
   let prox='';
   if(c.fijos.length||c.deudas.length||Object.keys(D().ahorros||{}).length){
