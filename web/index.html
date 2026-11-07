@@ -766,7 +766,7 @@ function vReporte(){
     <div class="rl"><div class="n">Gastos fijos</div><div class="m">−${$m2(tFijos)}</div></div>
     <div class="rl"><div class="n">Gastos variables</div><div class="m">−${$m2(r.tVar)}</div></div>
     ${r.tAho?`<div class="rl"><div class="n">Ahorro</div><div class="m">−${$m2(r.tAho)}</div></div>`:''}
-    <div class="rl tot"><div class="n">${neg?'Te faltó':'Te quedó'}</div><div class="m" style="color:${neg?'var(--bad)':'var(--ok)'};font-size:20px">${neg?'−':''}${$m2(Math.abs(r.balance))}</div></div></section>`;
+    <div class="rl tot"><div class="n">${(S.ym>curYM()?(neg?'Te faltaría':'Te quedaría'):(neg?'Te faltó':'Te quedó'))}</div><div class="m" style="color:${neg?'var(--bad)':'var(--ok)'};font-size:20px">${neg?'−':''}${$m2(Math.abs(r.balance))}</div></div></section>`;
   const gen=new Date();
   const btnPdf=S.pdf&&S.pdf.ym===S.ym?`<button class="btn pri" data-act="pdfListo">${ic('check')} Guardar o mandar PDF</button>`:`<button class="btn pri" data-act="pdf" ${S.pdfCargando?'disabled':''}>${S.pdfCargando?'Preparando PDF…':'Crear PDF'}</button>`;
   return `<div class="stack">
@@ -831,7 +831,7 @@ async function crearPdf(){
     col('banda','setFillColor');doc.roundedRect(M,y,AN,altoRes,4,4,'F');
     const xi=M+8;
     T('t');doc.setFontSize(9);col('muted');doc.text(txt('RESULTADO DEL MES'),xi,y+10);
-    T('r');doc.setFontSize(11);col('ink');doc.text(txt(neg?'Te faltó':'Te quedó'),xi,y+18);
+    T('r');doc.setFontSize(11);col('ink');doc.text(txt((S.ym>curYM()?(neg?'Te faltaría':'Te quedaría'):(neg?'Te faltó':'Te quedó'))),xi,y+18);
     T('h');doc.setFontSize(34);col(neg?'bad':'ok');doc.text((neg?'-':'')+dinero(Math.abs(r.balance)),xi,y+33);
     // proporción del ingreso
     const base=Math.max(r.tIng,tFijos+r.tVar+r.tAho,1),bw=AN/2-14,bx=xi,by=y+42;
@@ -843,7 +843,7 @@ async function crearPdf(){
     const lineaRes=(n,v,c,signo)=>{T('r');doc.setFontSize(10.5);col('ink');doc.text(txt(n),xr,yy);T('t');doc.setFontSize(11);col(c);doc.text(signo+dinero(v),xv,yy,{align:'right'});yy+=8.5};
     lineaRes('Ingresos',r.tIng,'ok','+');lineaRes('Gastos fijos',tFijos,'ink','-');lineaRes('Gastos variables',r.tVar,'ink','-');if(r.tAho)lineaRes('Ahorro',r.tAho,'ink','-');
     col('ink','setDrawColor');doc.setLineWidth(.4);doc.line(xr,yy-4.5,xv,yy-4.5);
-    T('t');doc.setFontSize(11);col('ink');doc.text(txt(neg?'Te faltó':'Te quedó'),xr,yy+1);col(neg?'bad':'ok');doc.text((neg?'-':'')+dinero(Math.abs(r.balance)),xv,yy+1,{align:'right'});
+    T('t');doc.setFontSize(11);col('ink');doc.text(txt((S.ym>curYM()?(neg?'Te faltaría':'Te quedaría'):(neg?'Te faltó':'Te quedó'))),xr,yy+1);col(neg?'bad':'ok');doc.text((neg?'-':'')+dinero(Math.abs(r.balance)),xv,yy+1,{align:'right'});
     y+=altoRes+10;
     // ----- secciones de detalle (más pequeñas) -----
     const nuevaHoja=()=>{doc.addPage();y=M;T('t');doc.setFontSize(9);col('muted');doc.text(txt(`Mi Lana · ${Mes}`),M,y);y+=8};
@@ -894,7 +894,7 @@ function vInicio(){
       <div class="pills"><span class="pill">Esta semana llevas ${$m(c.semana)}</span><span class="pill">Libre en el mes ${$m(Math.max(0,c.libre))}</span></div></section>`;
   }else{
     const sobra=c.libre>=0;
-    hero=`<section class="hero ${sobra?'':'over'}"><div class="lbl">${S.ym<curYM()?'Cómo cerraste':'Así pinta'} ${esc(mesL(S.ym))}</div><div class="big">${sobra?$m(c.libre):'−'+$m(-c.libre)}</div><p class="sub">${sobra?(S.ym<curYM()?'Te sobró después de pagos y gastos.':'Te quedaría libre después de tus pagos.'):'Gastaste más de lo que entró.'}</p></section>`;
+    hero=`<section class="hero ${sobra?'':'over'}"><div class="lbl">${S.ym<curYM()?'Cómo cerraste':'Así pinta'} ${esc(mesL(S.ym))}</div><div class="big">${sobra?$m(c.libre):'−'+$m(-c.libre)}</div><p class="sub">${sobra?(S.ym<curYM()?'Te sobró después de pagos y gastos.':`Te entran ${$m(c.base)}; menos ${$m(c.comp)} de gastos fijos y deudas${c.am.total>0?` y ${$m(c.am.total)} de ahorro`:''}, te quedaría esto libre.`):'Gastaste más de lo que entró.'}</p></section>`;
   }
   const tot=Math.max(c.base,c.comp+c.varTotal+Math.max(0,c.am.total))||1;
   const w=x=>(Math.max(0,x)/tot*100).toFixed(2)+'%';
@@ -903,7 +903,11 @@ function vInicio(){
       <span style="width:${w(c.compPagado)};background:var(--turq)"></span><span style="width:${w(c.compPend)};background:color-mix(in srgb,var(--turq) 40%,var(--surface-2))"></span><span style="width:${w(c.varTotal)};background:var(--rosa)"></span><span style="width:${w(c.am.total)};background:var(--lila)"></span><span style="width:${w(c.libre)};background:var(--lima)"></span>
     </div>
     <div class="legend"><div><i class="dot" style="background:var(--turq)"></i>Pagado ${$m(c.compPagado)}</div><div><i class="dot" style="background:color-mix(in srgb,var(--turq) 40%,var(--surface-2))"></i>Por pagar ${$m(c.compPend)}</div><div><i class="dot" style="background:var(--rosa)"></i>Gastos libres ${$m(c.varTotal)}</div>${c.am.total>0?`<div><i class="dot" style="background:var(--lila)"></i>Ahorro ${$m(c.am.total)}</div>`:''}<div><i class="dot" style="background:var(--lima)"></i>Libre ${$m(Math.max(0,c.libre))}</div></div></section>`;
-  const stats=`<div class="stats"><div class="stat"><div class="k"><i class="dot" style="background:var(--ok)"></i>Entró</div><div class="v">${$m(c.ingresos)}</div></div>
+  const futuro=S.ym>curYM();
+  const stats=futuro?`<div class="stats"><div class="stat"><div class="k"><i class="dot" style="background:var(--ok)"></i>Te va a entrar</div><div class="v">${$m(c.base)}</div></div>
+    <div class="stat"><div class="k"><i class="dot" style="background:var(--turq)"></i>Pagos fijos</div><div class="v">${$m(c.comp)}</div></div>
+    <div class="stat"><div class="k"><i class="dot" style="background:var(--lila)"></i>Ahorro</div><div class="v">${$m(Math.max(0,c.am.total))}</div></div></div>`
+  :`<div class="stats"><div class="stat"><div class="k"><i class="dot" style="background:var(--ok)"></i>Entró</div><div class="v">${$m(c.ingresos)}</div></div>
     <div class="stat"><div class="k"><i class="dot" style="background:var(--rosa)"></i>Salió</div><div class="v">${$m(c.gastos)}</div></div>
     <div class="stat"><div class="k"><i class="dot" style="background:var(--warn)"></i>Por pagar</div><div class="v">${$m(c.compPend)}</div></div></div>`;
   // próximos pagos
