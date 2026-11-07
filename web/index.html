@@ -37,10 +37,11 @@
   --on-accent:#FFFFFF; --hero:#FF2E97; --hero-a:#FFB347; --hero-b:#2CC9C9; --hero-over:#B3123A; --hero-over-a:#FF7A45; --hero-over-b:#6B1B5E;
   --shadow:0 10px 30px -12px rgba(0,0,0,.6); color-scheme:dark}
 
-html{touch-action:manipulation;-webkit-text-size-adjust:100%;text-size-adjust:100%}
+/* la app solo se desliza para arriba y abajo: nada de moverse a los lados ni hacer zoom */
+html{touch-action:pan-y;overflow-x:hidden;width:100%;max-width:100%;-webkit-text-size-adjust:100%;text-size-adjust:100%}
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 body{background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:15px;line-height:1.45;
-  touch-action:manipulation;overscroll-behavior-y:none}
+  touch-action:pan-y;overflow-x:clip;width:100%;max-width:100%;position:relative;overscroll-behavior:none;overflow-wrap:break-word}
 body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:10;background:var(--bg)}
 button,input,select{font:inherit;color:inherit}
 input,select{font-size:16px} /* evita el zoom automático al escribir en iPhone */
@@ -259,6 +260,9 @@ button{cursor:pointer;border:0;background:none}
 @media (max-width:370px){.brand span{display:none}.month b{min-width:64px;font-size:13px}.month button{width:28px}.hero .edit + .lbl{padding-right:0;margin-top:30px}}
 @media (max-width:380px){.stats{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}.stats .stat:last-child{grid-column:span 2}}
 body{margin:0;padding-top:env(safe-area-inset-top,0px)}
+.veil,.sheet,.nav{touch-action:pan-y;overscroll-behavior:contain}
+.sheet{overflow-x:hidden}
+img,svg{max-width:100%}
 </style>
 </head>
 <body>
@@ -290,6 +294,9 @@ body{margin:0;padding-top:env(safe-area-inset-top,0px)}
     last=now;
   },{passive:false});
   document.addEventListener('dblclick',stop,{passive:false});
+  let x0=0,y0=0;
+  document.addEventListener('touchstart',e=>{if(e.touches.length===1){x0=e.touches[0].clientX;y0=e.touches[0].clientY}},{passive:true});
+  document.addEventListener('touchmove',e=>{if(e.touches.length!==1)return;const dx=Math.abs(e.touches[0].clientX-x0),dy=Math.abs(e.touches[0].clientY-y0);if(dx>dy&&dx>6&&e.cancelable)e.preventDefault()},{passive:false});
 })();
 
 /* ---------- utilidades ---------- */
