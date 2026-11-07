@@ -13,9 +13,10 @@ const HOJAS = {
   ingresos: { nombre: 'Ingresos fijos', cols: ['id', 'nombre', 'monto', 'dia', 'meses_recibidos', 'perfil', 'automatico'] },
   fijos:    { nombre: 'Fijos',         cols: ['id', 'nombre', 'monto', 'dia', 'meses_pagados', 'perfil', 'domiciliado'] },
   deudas:   { nombre: 'Deudas',        cols: ['id', 'nombre', 'cuota', 'total_pagos', 'pagados_antes', 'dia', 'meses_pagados', 'perfil', 'domiciliado'] },
+  ahorros:  { nombre: 'Ahorro',        cols: ['id', 'nombre', 'meta', 'fecha_meta', 'mensual', 'dia', 'meses_apartados', 'ya_tenia', 'perfil', 'automatico'] },
   ajustes:  { nombre: 'Ajustes',       cols: ['clave', 'valor', 'perfil'] }
 };
-const DATOS = ['movs', 'ingresos', 'fijos', 'deudas'];
+const DATOS = ['movs', 'ingresos', 'fijos', 'deudas', 'ahorros'];
 
 /* Corre esta función desde el editor cada vez que actualices este código. */
 function prepararHoja() {
@@ -124,6 +125,7 @@ const si_ = v => v === true || /^(s[ií]|true|1)$/i.test(String(v).trim());
 function aObj_(k, f) {
   const tz = Session.getScriptTimeZone();
   const fecha = v => (v instanceof Date) ? Utilities.formatDate(v, tz, 'yyyy-MM-dd') : String(v);
+  const mes = v => (v instanceof Date) ? Utilities.formatDate(v, tz, 'yyyy-MM') : String(v || '');
   const mapa = v => { try { return v ? JSON.parse(v) : {}; } catch (e) { return {}; } };
   if (k === 'movs') return {
     fecha: fecha(f[1]), tipo: String(f[2]), categoria: String(f[3]), monto: Number(f[4]) || 0, nota: String(f[5] || ''),
@@ -131,6 +133,10 @@ function aObj_(k, f) {
   };
   if (k === 'ingresos') return { nombre: String(f[1]), monto: Number(f[2]) || 0, dia: Number(f[3]) || 1, recibidos: mapa(f[4]), domi: si_(f[6]) };
   if (k === 'fijos') return { nombre: String(f[1]), monto: Number(f[2]) || 0, dia: Number(f[3]) || 1, pagados: mapa(f[4]), domi: si_(f[6]) };
+  if (k === 'ahorros') return {
+    nombre: String(f[1]), meta: Number(f[2]) || 0, fecha: mes(f[3]), mensual: Number(f[4]) || 0, dia: Number(f[5]) || 1,
+    aportados: mapa(f[6]), inicial: Number(f[7]) || 0, domi: si_(f[9])
+  };
   if (k === 'deudas') return {
     nombre: String(f[1]), cuota: Number(f[2]) || 0, totalPagos: Number(f[3]) || 0,
     pagadosAntes: Number(f[4]) || 0, dia: Number(f[5]) || 1, historial: mapa(f[6]), domi: si_(f[8])
@@ -141,11 +147,12 @@ function aFila_(k, id, o, yo) {
   if (k === 'movs') return [id, o.fecha, o.tipo, o.categoria, Number(o.monto) || 0, o.nota || '', o.ref ? o.ref.col : '', o.ref ? o.ref.id : '', yo];
   if (k === 'ingresos') return [id, o.nombre, Number(o.monto) || 0, Number(o.dia) || 1, JSON.stringify(o.recibidos || {}), yo, o.domi ? 'sí' : ''];
   if (k === 'fijos') return [id, o.nombre, Number(o.monto) || 0, Number(o.dia) || 1, JSON.stringify(o.pagados || {}), yo, o.domi ? 'sí' : ''];
+  if (k === 'ahorros') return [id, o.nombre, Number(o.meta) || 0, o.fecha || '', Number(o.mensual) || 0, Number(o.dia) || 1, JSON.stringify(o.aportados || {}), Number(o.inicial) || 0, yo, o.domi ? 'sí' : ''];
   if (k === 'deudas') return [id, o.nombre, Number(o.cuota) || 0, Number(o.totalPagos) || 0, Number(o.pagadosAntes) || 0, Number(o.dia) || 1, JSON.stringify(o.historial || {}), yo, o.domi ? 'sí' : ''];
 }
 
 function cargar_(yo) {
-  const out = { movs: {}, ingresos: {}, fijos: {}, deudas: {}, perfil: {} };
+  const out = { movs: {}, ingresos: {}, fijos: {}, deudas: {}, ahorros: {}, perfil: {} };
   DATOS.forEach(function (k) {
     const u = ultima_(k);
     filas_(k).forEach(function (f) { if (f[0] !== '' && String(f[u]) === yo) out[k][String(f[0])] = aObj_(k, f); });
@@ -173,6 +180,7 @@ function guardar_(k, id, obj, yo) {
   if (r > 0 && dueno_(k, r) !== yo) throw new Error('ajeno');
   const destino = r > 0 ? r : sh.getLastRow() + 1;
   if (k === 'movs') sh.getRange(destino, 2).setNumberFormat('@');
+  if (k === 'ahorros') sh.getRange(destino, 4).setNumberFormat('@');
   sh.getRange(destino, 1, 1, fila.length).setValues([fila]);
 }
 

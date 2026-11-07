@@ -1,0 +1,37 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <defs><clipPath id="sq"><rect width="512" height="512" rx="116"/></clipPath></defs>
+  <g clip-path="url(#sq)">
+    <rect width="512" height="512" fill="#E4007C"/>
+    <circle cx="470" cy="40" r="170" fill="#FF3FA4" opacity=".5"/>
+    <circle cx="40" cy="500" r="130" fill="#B8006A" opacity=".45"/>
+    <g id="cochi">
+      <!-- colita -->
+      <path d="M100 292 C 66 292, 64 252, 92 254 C 112 256, 108 284, 86 278" fill="none" stroke="#FF8CC6" stroke-width="13" stroke-linecap="round"/>
+      <!-- patitas -->
+      <rect x="160" y="372" width="54" height="74" rx="22" fill="#FF9ED0"/>
+      <rect x="296" y="372" width="54" height="74" rx="22" fill="#FF9ED0"/>
+      <!-- oreja -->
+      <path d="M176 204 Q 168 138 214 126 Q 236 162 236 196 Z" fill="#FF8CC6" stroke="#FF8CC6" stroke-width="10" stroke-linejoin="round"/>
+      <!-- cuerpo -->
+      <ellipse cx="258" cy="296" rx="168" ry="126" fill="#FFC6E3"/>
+      <!-- trompita -->
+      <ellipse cx="414" cy="300" rx="42" ry="50" fill="#FF8CC6"/>
+      <ellipse cx="404" cy="290" rx="8" ry="13" fill="#C4006A"/>
+      <ellipse cx="428" cy="290" rx="8" ry="13" fill="#C4006A"/>
+      <!-- ojo y cachete -->
+      <circle cx="350" cy="252" r="13" fill="#3A1430"/>
+      <circle cx="355" cy="247" r="4" fill="#fff"/>
+      <ellipse cx="336" cy="300" rx="22" ry="13" fill="#FF8CC6" opacity=".7"/>
+      <!-- ranura -->
+      <rect x="216" y="186" width="84" height="16" rx="8" fill="#C4006A"/>
+      <!-- brillo -->
+      <path d="M140 262 Q 150 222 186 204" fill="none" stroke="#fff" stroke-opacity=".7" stroke-width="13" stroke-linecap="round"/>
+    </g>
+    <!-- moneda cayendo -->
+    <g transform="rotate(-14 258 112)">
+      <ellipse cx="258" cy="112" rx="50" ry="50" fill="#FF9F1C"/>
+      <ellipse cx="258" cy="112" rx="36" ry="36" fill="none" stroke="#FFC46B" stroke-width="8"/>
+      <path d="M272 94 C 264 86, 242 86, 242 100 C 242 114, 274 108, 274 124 C 274 138, 250 138, 242 130 M258 80 L258 144" fill="none" stroke="#B34700" stroke-width="9" stroke-linecap="round" stroke-linejoin="round"/>
+    </g>
+  </g>
+</svg>

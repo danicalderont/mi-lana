@@ -3,7 +3,7 @@
 App de finanzas personales: cuánto puedo gastar por semana, gastos e ingresos, gastos fijos, deudas y plan anual de cuándo se libera el dinero.
 
 - **App:** `web/index.html`, publicada en Cloudflare (Worker `mi-lana`, conectado a este repo)
-- **Base de datos:** una hoja de Google Sheets con pestañas Perfiles, Movimientos, Ingresos fijos, Fijos, Deudas y Ajustes. Cada fila lleva el `perfil` de su dueña.
+- **Base de datos:** una hoja de Google Sheets con pestañas Perfiles, Movimientos, Ingresos fijos, Fijos, Deudas, Ahorro y Ajustes. Cada fila lleva el `perfil` de su dueña.
 - **Puente:** `apps-script/Codigo.gs`, pegado en el Apps Script de esa hoja. Con `@OnlyCurrentDoc`, Google solo le da permiso a esa hoja.
 
 ## Montar la hoja
