@@ -729,15 +729,15 @@ function vAnio(){
 function datosReporte(ym){
   const d=D(),c=calc(ym),cur=curYM();
   const mv=id=>id&&d.movs[id];
-  const ingresos=[...c.im.recs.map(r=>({n:r.nombre,sub:`Ingreso fijo · día ${r.dia}`,m:r.recibido?r.real:(ym<cur?0:r.monto),st:r.recibido?'ok':(ym<cur?'no':(r.domi?'au':'pend'))})).filter(x=>x.st!=='no'),
-    ...c.movs.filter(m=>m.tipo==='ingreso'&&!m.ref).sort((a,b)=>a.fecha.localeCompare(b.fecha)).map(m=>({n:m.nota||m.categoria,sub:`${m.categoria} · ${fechaC(m.fecha)}`,m:+m.monto,st:'ok'}))];
-  const fijos=FCATS.map(([n,k,col])=>{const xs=c.fijos.filter(x=>fcOf(x)===n).sort((a,b)=>(a.dia||0)-(b.dia||0)).map(x=>{const p=mv((x.pagados||{})[ym]);return{n:x.nombre,sub:`Día ${x.dia}`,m:p?+p.monto:+x.monto,st:p?'ok':(x.domi?'au':'pend')}});return{n,k,col,xs,t:xs.reduce((t,x)=>t+x.m,0)}}).filter(g=>g.xs.length);
-  const deudas=c.deudas.map(x=>{const p=mv((x.historial||{})[ym]);const num=Math.min(pagados(x)+(p?0:1),x.totalPagos);return{n:x.nombre,sub:`Pago ${num} de ${x.totalPagos} · día ${x.dia}`,m:p?+p.monto:+x.cuota,st:p?'ok':(x.domi?'au':'pend')}});
+  const ingresos=[...c.im.recs.map(r=>({n:r.nombre,sub:'Ingreso fijo',m:r.recibido?r.real:(ym<cur?0:r.monto),st:r.recibido?'ok':(ym<cur?'no':(r.domi?'au':'pend'))})).filter(x=>x.st!=='no'),
+    ...c.movs.filter(m=>m.tipo==='ingreso'&&!m.ref).sort((a,b)=>a.fecha.localeCompare(b.fecha)).map(m=>({n:m.nota||m.categoria,sub:m.categoria,m:+m.monto,st:'ok'}))];
+  const fijos=FCATS.map(([n,k,col])=>{const xs=c.fijos.filter(x=>fcOf(x)===n).sort((a,b)=>(a.dia||0)-(b.dia||0)).map(x=>{const p=mv((x.pagados||{})[ym]);return{n:x.nombre,sub:'',m:p?+p.monto:+x.monto,st:p?'ok':(x.domi?'au':'pend')}});return{n,k,col,xs,t:xs.reduce((t,x)=>t+x.m,0)}}).filter(g=>g.xs.length);
+  const deudas=c.deudas.map(x=>{const p=mv((x.historial||{})[ym]);const num=Math.min(pagados(x)+(p?0:1),x.totalPagos);return{n:x.nombre,sub:`Pago ${num} de ${x.totalPagos}`,m:p?+p.monto:+x.cuota,st:p?'ok':(x.domi?'au':'pend')}});
   const vars={};c.movs.filter(m=>m.tipo==='gasto'&&!m.ref).forEach(m=>(vars[m.categoria]=vars[m.categoria]||[]).push(m));
-  const variables=Object.entries(vars).map(([n,xs])=>({n,info:catInfo('gasto',n),xs:xs.sort((a,b)=>a.fecha.localeCompare(b.fecha)).map(m=>({n:m.nota||n,sub:fechaC(m.fecha),m:+m.monto})),t:xs.reduce((t,m)=>t+(+m.monto||0),0)})).sort((a,b)=>b.t-a.t);
+  const variables=Object.entries(vars).map(([n,xs])=>({n,info:catInfo('gasto',n),xs:xs.sort((a,b)=>a.fecha.localeCompare(b.fecha)).map(m=>({n:m.nota||n,sub:'',m:+m.monto})),t:xs.reduce((t,m)=>t+(+m.monto||0),0)})).sort((a,b)=>b.t-a.t);
   const ahorro=Object.entries(d.ahorros||{}).map(([id,x])=>{const ms=c.movs.filter(m=>(m.tipo==='ahorro'||m.tipo==='retiro')&&m.ref&&m.ref.id===id);const hecho=ms.reduce((t,m)=>t+(m.tipo==='retiro'?-1:1)*(+m.monto||0),0);
     const plan=+x.mensual>0&&!(x.aportados||{})[ym]&&ym>=cur&&!metaLlena(id)&&!(x.fecha&&ym>x.fecha)?+x.mensual:0;
-    return{n:x.nombre,sub:plan?`Por apartar · día ${x.dia}`:(hecho<0?'Sacaste del ahorro':'Apartado este mes'),m:hecho+plan,hecho,plan,st:plan?(x.domi?'au':'pend'):'ok'}}).filter(x=>x.m||x.hecho);
+    return{n:x.nombre,sub:plan?'Por apartar':(hecho<0?'Sacaste del ahorro':'Apartado este mes'),m:hecho+plan,hecho,plan,st:plan?(x.domi?'au':'pend'):'ok'}}).filter(x=>x.m||x.hecho);
   const sumG=gs=>gs.reduce((t,g)=>t+g.t,0),sumX=xs=>xs.reduce((t,x)=>t+x.m,0);
   const tIng=c.base,tFij=sumG(fijos),tDeu=sumX(deudas),tVar=c.varTotal,tAho=Math.max(0,c.am.total);
   const pend=[...fijos.flatMap(g=>g.xs),...deudas,...ahorro.map(a=>({...a,m:a.plan}))].filter(x=>x.st==='pend'||x.st==='au').filter(x=>x.m>0);
