@@ -10,8 +10,8 @@ const CLAVE = 'CAMBIA-ESTA-CLAVE-por-una-larga-2026';
 const HOJAS = {
   perfiles: { nombre: 'Perfiles',      cols: ['id', 'nombre', 'pin_hash', 'creado'] },
   movs:     { nombre: 'Movimientos',   cols: ['id', 'fecha', 'tipo', 'categoria', 'monto', 'nota', 'pago_de', 'pago_id', 'perfil'] },
-  ingresos: { nombre: 'Ingresos fijos', cols: ['id', 'nombre', 'monto', 'dia', 'meses_recibidos', 'perfil', 'automatico'] },
-  fijos:    { nombre: 'Fijos',         cols: ['id', 'nombre', 'monto', 'dia', 'meses_pagados', 'perfil', 'domiciliado', 'categoria'] },
+  ingresos: { nombre: 'Ingresos fijos', cols: ['id', 'nombre', 'monto', 'dia', 'meses_recibidos', 'perfil', 'automatico', 'meses_omitidos'] },
+  fijos:    { nombre: 'Fijos',         cols: ['id', 'nombre', 'monto', 'dia', 'meses_pagados', 'perfil', 'domiciliado', 'categoria', 'meses_omitidos'] },
   deudas:   { nombre: 'Deudas',        cols: ['id', 'nombre', 'cuota', 'total_pagos', 'pagados_antes', 'dia', 'meses_pagados', 'perfil', 'domiciliado'] },
   ahorros:  { nombre: 'Ahorro',        cols: ['id', 'nombre', 'meta', 'fecha_meta', 'mensual', 'dia', 'meses_apartados', 'ya_tenia', 'perfil', 'automatico'] },
   ajustes:  { nombre: 'Ajustes',       cols: ['clave', 'valor', 'perfil'] }
@@ -131,8 +131,8 @@ function aObj_(k, f) {
     fecha: fecha(f[1]), tipo: String(f[2]), categoria: String(f[3]), monto: Number(f[4]) || 0, nota: String(f[5] || ''),
     ref: f[6] ? { col: String(f[6]), id: String(f[7]) } : null
   };
-  if (k === 'ingresos') return { nombre: String(f[1]), monto: Number(f[2]) || 0, dia: Number(f[3]) || 1, recibidos: mapa(f[4]), domi: si_(f[6]) };
-  if (k === 'fijos') return { nombre: String(f[1]), monto: Number(f[2]) || 0, dia: Number(f[3]) || 1, pagados: mapa(f[4]), domi: si_(f[6]), cat: String(f[7] || '') };
+  if (k === 'ingresos') return { nombre: String(f[1]), monto: Number(f[2]) || 0, dia: Number(f[3]) || 1, recibidos: mapa(f[4]), domi: si_(f[6]), omitidos: mapa(f[7]) };
+  if (k === 'fijos') return { nombre: String(f[1]), monto: Number(f[2]) || 0, dia: Number(f[3]) || 1, pagados: mapa(f[4]), domi: si_(f[6]), cat: String(f[7] || ''), omitidos: mapa(f[8]) };
   if (k === 'ahorros') return {
     nombre: String(f[1]), meta: Number(f[2]) || 0, fecha: mes(f[3]), mensual: Number(f[4]) || 0, dia: Number(f[5]) || 1,
     aportados: mapa(f[6]), inicial: Number(f[7]) || 0, domi: si_(f[9])
@@ -145,8 +145,8 @@ function aObj_(k, f) {
 
 function aFila_(k, id, o, yo) {
   if (k === 'movs') return [id, o.fecha, o.tipo, o.categoria, Number(o.monto) || 0, o.nota || '', o.ref ? o.ref.col : '', o.ref ? o.ref.id : '', yo];
-  if (k === 'ingresos') return [id, o.nombre, Number(o.monto) || 0, Number(o.dia) || 1, JSON.stringify(o.recibidos || {}), yo, o.domi ? 'sí' : ''];
-  if (k === 'fijos') return [id, o.nombre, Number(o.monto) || 0, Number(o.dia) || 1, JSON.stringify(o.pagados || {}), yo, o.domi ? 'sí' : '', o.cat || ''];
+  if (k === 'ingresos') return [id, o.nombre, Number(o.monto) || 0, Number(o.dia) || 1, JSON.stringify(o.recibidos || {}), yo, o.domi ? 'sí' : '', JSON.stringify(o.omitidos || {})];
+  if (k === 'fijos') return [id, o.nombre, Number(o.monto) || 0, Number(o.dia) || 1, JSON.stringify(o.pagados || {}), yo, o.domi ? 'sí' : '', o.cat || '', JSON.stringify(o.omitidos || {})];
   if (k === 'ahorros') return [id, o.nombre, Number(o.meta) || 0, o.fecha || '', Number(o.mensual) || 0, Number(o.dia) || 1, JSON.stringify(o.aportados || {}), Number(o.inicial) || 0, yo, o.domi ? 'sí' : ''];
   if (k === 'deudas') return [id, o.nombre, Number(o.cuota) || 0, Number(o.totalPagos) || 0, Number(o.pagadosAntes) || 0, Number(o.dia) || 1, JSON.stringify(o.historial || {}), yo, o.domi ? 'sí' : ''];
 }
