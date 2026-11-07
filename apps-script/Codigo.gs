@@ -10,9 +10,9 @@ const CLAVE = 'CAMBIA-ESTA-CLAVE-por-una-larga-2026';
 const HOJAS = {
   perfiles: { nombre: 'Perfiles',      cols: ['id', 'nombre', 'pin_hash', 'creado'] },
   movs:     { nombre: 'Movimientos',   cols: ['id', 'fecha', 'tipo', 'categoria', 'monto', 'nota', 'pago_de', 'pago_id', 'perfil'] },
-  ingresos: { nombre: 'Ingresos fijos', cols: ['id', 'nombre', 'monto', 'dia', 'meses_recibidos', 'perfil'] },
-  fijos:    { nombre: 'Fijos',         cols: ['id', 'nombre', 'monto', 'dia', 'meses_pagados', 'perfil'] },
-  deudas:   { nombre: 'Deudas',        cols: ['id', 'nombre', 'cuota', 'total_pagos', 'pagados_antes', 'dia', 'meses_pagados', 'perfil'] },
+  ingresos: { nombre: 'Ingresos fijos', cols: ['id', 'nombre', 'monto', 'dia', 'meses_recibidos', 'perfil', 'automatico'] },
+  fijos:    { nombre: 'Fijos',         cols: ['id', 'nombre', 'monto', 'dia', 'meses_pagados', 'perfil', 'domiciliado'] },
+  deudas:   { nombre: 'Deudas',        cols: ['id', 'nombre', 'cuota', 'total_pagos', 'pagados_antes', 'dia', 'meses_pagados', 'perfil', 'domiciliado'] },
   ajustes:  { nombre: 'Ajustes',       cols: ['clave', 'valor', 'perfil'] }
 };
 const DATOS = ['movs', 'ingresos', 'fijos', 'deudas'];
@@ -83,7 +83,7 @@ function validar_(id, pin) {
 function adoptarHuerfanos_(id) {
   Object.keys(HOJAS).forEach(function (k) {
     if (k === 'perfiles') return;
-    const sh = hoja_(k), c = HOJAS[k].cols.length, n = sh.getLastRow() - 1;
+    const sh = hoja_(k), c = ultima_(k) + 1, n = sh.getLastRow() - 1;
     if (n < 1) return;
     const r = sh.getRange(2, c, n, 1), v = r.getValues();
     let cambio = false;
@@ -118,7 +118,8 @@ function filas_(k) {
   return sh.getRange(2, 1, n, HOJAS[k].cols.length).getValues();
 }
 
-const ultima_ = k => HOJAS[k].cols.length - 1; // columna perfil
+const ultima_ = k => HOJAS[k].cols.indexOf('perfil'); // columna perfil (base 0)
+const si_ = v => v === true || /^(s[ií]|true|1)$/i.test(String(v).trim());
 
 function aObj_(k, f) {
   const tz = Session.getScriptTimeZone();
@@ -128,19 +129,19 @@ function aObj_(k, f) {
     fecha: fecha(f[1]), tipo: String(f[2]), categoria: String(f[3]), monto: Number(f[4]) || 0, nota: String(f[5] || ''),
     ref: f[6] ? { col: String(f[6]), id: String(f[7]) } : null
   };
-  if (k === 'ingresos') return { nombre: String(f[1]), monto: Number(f[2]) || 0, dia: Number(f[3]) || 1, recibidos: mapa(f[4]) };
-  if (k === 'fijos') return { nombre: String(f[1]), monto: Number(f[2]) || 0, dia: Number(f[3]) || 1, pagados: mapa(f[4]) };
+  if (k === 'ingresos') return { nombre: String(f[1]), monto: Number(f[2]) || 0, dia: Number(f[3]) || 1, recibidos: mapa(f[4]), domi: si_(f[6]) };
+  if (k === 'fijos') return { nombre: String(f[1]), monto: Number(f[2]) || 0, dia: Number(f[3]) || 1, pagados: mapa(f[4]), domi: si_(f[6]) };
   if (k === 'deudas') return {
     nombre: String(f[1]), cuota: Number(f[2]) || 0, totalPagos: Number(f[3]) || 0,
-    pagadosAntes: Number(f[4]) || 0, dia: Number(f[5]) || 1, historial: mapa(f[6])
+    pagadosAntes: Number(f[4]) || 0, dia: Number(f[5]) || 1, historial: mapa(f[6]), domi: si_(f[8])
   };
 }
 
 function aFila_(k, id, o, yo) {
   if (k === 'movs') return [id, o.fecha, o.tipo, o.categoria, Number(o.monto) || 0, o.nota || '', o.ref ? o.ref.col : '', o.ref ? o.ref.id : '', yo];
-  if (k === 'ingresos') return [id, o.nombre, Number(o.monto) || 0, Number(o.dia) || 1, JSON.stringify(o.recibidos || {}), yo];
-  if (k === 'fijos') return [id, o.nombre, Number(o.monto) || 0, Number(o.dia) || 1, JSON.stringify(o.pagados || {}), yo];
-  if (k === 'deudas') return [id, o.nombre, Number(o.cuota) || 0, Number(o.totalPagos) || 0, Number(o.pagadosAntes) || 0, Number(o.dia) || 1, JSON.stringify(o.historial || {}), yo];
+  if (k === 'ingresos') return [id, o.nombre, Number(o.monto) || 0, Number(o.dia) || 1, JSON.stringify(o.recibidos || {}), yo, o.domi ? 'sí' : ''];
+  if (k === 'fijos') return [id, o.nombre, Number(o.monto) || 0, Number(o.dia) || 1, JSON.stringify(o.pagados || {}), yo, o.domi ? 'sí' : ''];
+  if (k === 'deudas') return [id, o.nombre, Number(o.cuota) || 0, Number(o.totalPagos) || 0, Number(o.pagadosAntes) || 0, Number(o.dia) || 1, JSON.stringify(o.historial || {}), yo, o.domi ? 'sí' : ''];
 }
 
 function cargar_(yo) {
