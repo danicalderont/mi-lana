@@ -1,0 +1,7 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "mi-lana",
+  "compatibility_date": "2026-11-04",
+  // Solo se publica la carpeta web/. El Apps Script vive en tu hoja, no aquí.
+  "assets": { "directory": "./web" }
+}
